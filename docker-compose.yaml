@@ -1,0 +1,39 @@
+# ship the fastapi metrics, traces, and logs to AWS using OpenTelemetry Collector
+
+services:
+
+  fastapi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://aws-otel-collector:4317
+      OTEL_RESOURCE_ATTRIBUTES: service.namespace=otel-fastapi-local,service.name=otel-fastapi-local-service
+      # OTEL_SERVICE_NAME: "otel-fastapi-local-service"
+      # OTEL_LOG_LEVEL: "DEBUG"
+      OTEL_TRACES_EXPORTER: "otlp"
+      OTEL_METRICS_EXPORTER: "otlp"
+      OTEL_LOGS_EXPORTER: "otlp,console"
+    volumes:
+      - ./:/app
+    depends_on:
+      - aws-otel-collector
+  
+  # ADOT Collector
+  aws-otel-collector:
+    image: public.ecr.aws/aws-observability/aws-otel-collector:latest
+    # very slow when you build it first time locally!!!
+    # build:
+    # context: ../
+    # dockerfile: cmd/awscollector/Dockerfile
+    command: ["--config=/etc/otel-agent-config.yaml"]
+    env_file:
+      - .env
+    volumes:
+      - ./otel-config.yaml:/etc/otel-agent-config.yaml
+      # - ~/.aws:/home/aoc/.aws
+    # ports:
+    #   - "8000:8000"   # fastapi

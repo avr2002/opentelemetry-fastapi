@@ -1,0 +1,46 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      # http:
+      #   endpoint: 0.0.0.0:4318
+
+# processors:
+#   batch:
+#     timeout: 60s
+
+exporters:
+  logging:
+    loglevel: info
+  awsxray:
+    region: 'ap-south-1'
+    # local_mode: true
+  awsemf:
+    region: 'ap-south-1'
+    output_destination: 'stdout'
+    # log_group_name: 'otel-fastapi-local-service'
+    # namespace: 'otel-fastapi-local'
+  awscloudwatchlogs:
+    region: 'ap-south-1'
+    log_group_name: 'otel-fastapi-local-service'
+    log_stream_name: 'LocalOTelFastAPILogStream'
+    endpoint: "logs.ap-south-1.amazonaws.com"
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      # processors: [batch]
+      exporters: [logging, awsxray]
+    metrics:
+      receivers: [otlp]
+      # processors: [batch]
+      exporters: [logging, awsemf]
+    logs:
+      receivers: [otlp]
+      # processors: [batch]
+      exporters: [logging, awscloudwatchlogs]
+  # telemetry:
+  #   logs:
+  #     level: info
