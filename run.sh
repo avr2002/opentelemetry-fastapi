@@ -24,7 +24,7 @@ function set-local-aws-env-vars {
 function run-docker {
     aws configure export-credentials --profile $AWS_PROFILE --format env > .env
     set-local-aws-env-vars
-    docker compose up --build
+    docker compose up --remove-orphans --build
 }
 
 

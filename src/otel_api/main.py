@@ -3,6 +3,8 @@
 import logging
 import os
 import sys
+import time
+from logging import Logger
 from typing import Any
 
 import httpx
@@ -13,37 +15,41 @@ from fastapi import (
     Response,
     status,
 )
-from opentelemetry import metrics
-from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry import (
+    metrics,
+    trace,
+)
+from opentelemetry.metrics import Meter
+from opentelemetry.trace import Tracer
+
+# from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from pydantic import BaseModel
 
 ROUTER = APIRouter(tags=["OTel FastAPI"])
 
 # get log level from environment variable
-# LOG_LEVEL = os.environ.get("LOG_LEVEL", "DEBUG").upper()
+LOG_LEVEL = os.environ["LOG_LEVEL"].upper()
+# os.environ.get("LOG_LEVEL", "INFO").upper()
 
 # configure logger object with the desired log level and format
 logging.basicConfig(
     format="{asctime} | {levelname} | {name}:{lineno}:{funcName} | {message}",
     style="{",  # uses {} as placeholders
-    # level=LOG_LEVEL,
+    level=LOG_LEVEL,
     stream=sys.stdout,  # where to write the log messages, in this case stdout or console
 )
 
 # create logger object with the name of the current module/file to start logging
-logger = logging.getLogger(__name__)
-meter = metrics.get_meter(__name__)
+logger: Logger = logging.getLogger(__name__)
+meter: Meter = metrics.get_meter(__name__)
+tracer: Tracer = trace.get_tracer(__name__)
 
-request_counter = meter.create_counter(name="request_count", description="Request count per endpoint")
+request_counter = meter.create_counter(name="RequestCount", description="Request Count per Endpoint")
 
-
-# from rich import inspect
 
 async def request_count_metric__middleware(request: Request, call_next):
-    
-    # inspect(request)
-    
-    request_counter.add(1, {"method2": request.method, "path2": request.url.path, "query2": "AMIT"})
+    """Middleware to count the number of requests to each endpoint."""
+    request_counter.add(1)
     # meter.create_counter(name=request.method, unit="Count", description="Request count per endpoint")
 
     response = await call_next(request)
@@ -56,26 +62,72 @@ class EchoRequestBody(BaseModel):
 
 @ROUTER.get("/hello")
 async def read_hello(response: Response) -> dict[str, str]:
-    response.status_code = status.HTTP_200_OK
-    logger.info("Hello, World! is logged")
-    return {"message": "Hello, World!"}
+    with tracer.start_as_current_span("sayHelloSpan") as span:
+        # Sleep
+        with tracer.start_as_current_span("SleepingWhileSayingHelloSpan") as sleep_span:
+            time.sleep(2)
+            logger.info("Sleeping for 2 second before saying Hello, World!")
+            sleep_span.set_attribute("sleep", "2s")
+
+        response.status_code = status.HTTP_200_OK
+        logger.info("Hello, World! is logged")
+
+        span.set_attributes(
+            {
+                "Hello-to": "the-World",
+                "Hello-from": "OpenTelemetry",
+            }
+        )
+        return {"message": "Hello, World!"}
 
 
 @ROUTER.get("/httpbin")
 async def httpbin(response: Response) -> dict[str, Any]:
-    async with httpx.AsyncClient() as client:
-        resp = await client.get("https://httpbin.org/get")
-        response.status_code = resp.status_code
-        logger.debug("httpbin response: %s", resp.json())
-        logger.info("httpbin is successfully called")
-        return resp.json()
+    with tracer.start_as_current_span("httpbinSpan") as span:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get("https://httpbin.org/get")
+            response.status_code = resp.status_code
+
+            span.set_attributes(
+                {
+                    "http.method": "GET",
+                    "http.status_code": resp.status_code,
+                    "http.url": str(resp.url),
+                }
+            )
+            logger.debug("httpbin response: %s", resp.json())
+            logger.info("httpbin is successfully called")
+            return resp.json()
+
+
+@ROUTER.get("/jsonplaceholder/posts/{post_id}")
+async def get_post(post_id: int, response: Response) -> dict[str, Any]:
+    """Fetches a list of posts from jsonplaceholder."""
+    with tracer.start_as_current_span("GetPostsSpan") as span:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(f"https://jsonplaceholder.typicode.com/posts/{post_id}")
+            response.status_code = resp.status_code
+
+            span.set_attributes(
+                {
+                    "http.method": "GET",
+                    "http.status_code": resp.status_code,
+                    "http.url": str(resp.url),
+                }
+            )
+            logger.debug("jsonplaceholder response: %s", resp.json())
+            logger.info("jsonplaceholder posts fetched successfully")
+            return resp.json()
 
 
 @ROUTER.post("/echo")
 async def echo(body: EchoRequestBody, response: Response) -> dict[str, str]:
-    response.status_code = status.HTTP_200_OK
-    logger.info("Echoing message: %s", body.message)
-    return {"message": body.message}
+    with tracer.start_as_current_span("echoSpan") as span:
+        response.status_code = status.HTTP_200_OK
+        logger.info("Echoing message: %s", body.message)
+
+        span.set_attribute("message", body.message)
+        return {"message": body.message}
 
 
 def create_app() -> FastAPI:

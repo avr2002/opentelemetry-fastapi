@@ -17,7 +17,12 @@ requires-python = ">=3.8"
 keywords = ["python", "rest-api"]
 license = { text = "MIT" }
 classifiers = ["Programming Language :: Python :: 3"]
-dependencies = ["fastapi", "httpx", "opentelemetry-distro", "opentelemetry-exporter-otlp"]
+dependencies = [
+    "fastapi",
+    "httpx",
+    "opentelemetry-distro",
+    "opentelemetry-exporter-otlp",
+]
 dynamic = ["version"]
 
 [project.optional-dependencies]
@@ -38,11 +43,37 @@ markers = ["slow: marks tests as slow (deselect with '-m \"not slow\"')"]
 
 [tool.black]
 line-length = 119
-exclude = ".venv"
+# regular expression ignoring multiple patterns separated by '|' and newlines
+exclude = '''
+/(
+    \.venv
+  | venv
+)/
+'''
 
 [tool.flake8]
 docstring-convention = "all"
-ignore = ["D107", "D212", "E501", "W503", "W605", "D203", "D100"]
+ignore = [
+    "D107",
+    "D212",
+    "E501",
+    "W503",
+    "W605",
+    "D203",
+    "D100",
+    "R701",
+    "D401",
+    # D103: Missing docstring in public function
+    "D103",
+    # D101: Missing docstring in public class
+    "D101",
+    # D102: Missing docstring in public method
+    "D102",
+    # D104: Missing docstring in public package
+    "D104",
+    # D105: Missing docstring in magic method
+    "D105",
+]
 exclude = [".venv"]
 max-line-length = 119
 
@@ -60,27 +91,13 @@ disable = [
     "line-too-long",
     "trailing-whitespace",
     "missing-function-docstring",
-    "missing-class-docstring",
     "consider-using-f-string",
     "import-error",
     "too-few-public-methods",
     "redefined-outer-name",
+    "unused-argument",
+    "inconsistent-return-statements",
+    "unsupported-binary-operation",
+    "unsubscriptable-object",
+    "missing-module-docstring",
 ]
-
-[tool.mypy]
-namespace_packages = true
-
-[tool.ruff]
-# Enable flake8-bugbear (`B`) rules.
-select = ["E", "F", "B", "ERA"]
-
-# Never enforce `E501` (line length violations).
-ignore = ["E501", "F401"]
-
-# Avoid trying to fix flake8-bugbear (`B`) violations.
-unfixable = ["B"]
-
-# Ignore `E402` (import violations) in all `__init__.py` files.
-[tool.ruff.lint.per-file-ignores]
-"__init__.py" = ["E402"]
-"**/{tests,docs,tools}/*" = ["E402"]

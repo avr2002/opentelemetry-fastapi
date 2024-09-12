@@ -3,11 +3,11 @@
 ## Quick start
 
 ```bash
-pip install files-api-cdk
+pip install otel-api
 ```
 
 ```python
-from files_api_cdk import ...
+from otel_api import ...
 ```
 
 ## Contributing

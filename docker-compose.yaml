@@ -11,29 +11,38 @@ services:
     environment:
       OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED: "true"
       OTEL_EXPORTER_OTLP_ENDPOINT: http://aws-otel-collector:4317
-      OTEL_RESOURCE_ATTRIBUTES: service.namespace=otel-fastapi-local,service.name=otel-fastapi-local-service
-      # OTEL_SERVICE_NAME: "otel-fastapi-local-service"
-      # OTEL_LOG_LEVEL: "DEBUG"
-      OTEL_TRACES_EXPORTER: "otlp"
+      OTEL_SERVICE_NAME: "Local-OTel-FastAPI-Service"
+      # OTEL_LOG_LEVEL: "INFO"
+      LOG_LEVEL: "INFO"
+      OTEL_TRACES_EXPORTER: "otlp" # "otlp,console" to export traces to console also
       OTEL_METRICS_EXPORTER: "otlp"
       OTEL_LOGS_EXPORTER: "otlp,console"
     volumes:
       - ./:/app
     depends_on:
       - aws-otel-collector
+      # - otel-collector
   
   # ADOT Collector
+  # https://github.com/aws-observability/aws-otel-collector/blob/main/docs/developers/docker-demo.md
+  # https://github.com/aws-observability/aws-otel-collector/blob/main/examples/docker/docker-compose.yaml
   aws-otel-collector:
     image: public.ecr.aws/aws-observability/aws-otel-collector:latest
-    # very slow when you build it first time locally!!!
-    # build:
-    # context: ../
-    # dockerfile: cmd/awscollector/Dockerfile
     command: ["--config=/etc/otel-agent-config.yaml"]
     env_file:
       - .env
     volumes:
       - ./otel-config.yaml:/etc/otel-agent-config.yaml
-      # - ~/.aws:/home/aoc/.aws
-    # ports:
-    #   - "8000:8000"   # fastapi
+  
+  # OpenTelemetry Collector
+  # otel-collector:
+  #   image: otel/opentelemetry-collector-contrib:latest
+  #   volumes:
+  #     - ./otel-config.yaml:/etc/otelcol-contrib/config.yaml
+  #   # env_file:
+  #   #   - .env
+  #   ports:
+  #     - 4317:4317 # OTLP gRPC receiver
+  #     - 8888:8888 # OTLP metrics receiver
+  #     # - 4318:4318 # OTLP http receiver
+  #     # - 55679:55679 # zpages extension

@@ -21,11 +21,6 @@ COPY ./tests/ /app/tests/
 ENV PORT=8000
 
 
-# CMD [\
-#     "opentelemetry-instrument", "--", "gunicorn", "-k", "uvicorn.workers.UvicornWorker", "main:app",\
-#     "--bind", "0.0.0.0:8000",\
-#     ]
-
 # start the server with opentelemetry-instrument
 CMD opentelemetry-instrument \
     gunicorn \

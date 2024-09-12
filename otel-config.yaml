@@ -3,44 +3,61 @@ receivers:
     protocols:
       grpc:
         endpoint: 0.0.0.0:4317
-      # http:
-      #   endpoint: 0.0.0.0:4318
-
-# processors:
-#   batch:
-#     timeout: 60s
+      http:
+        endpoint: 0.0.0.0:4318
+  # aws xray reciever: https://aws-otel.github.io/docs/components/x-ray-receiver
 
 exporters:
+  # https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/loggingexporter
+  # https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/debugexporter
+  # Outputs telemetry data to the console for debugging purposes. "logging" is deprecated with "debug" exporter.
   logging:
-    loglevel: info
-  awsxray:
-    region: 'ap-south-1'
-    # local_mode: true
+    verbosity: basic
+    # use_internal_logger: "false"
+  
+  # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/awsemfexporter
   awsemf:
-    region: 'ap-south-1'
-    output_destination: 'stdout'
-    # log_group_name: 'otel-fastapi-local-service'
-    # namespace: 'otel-fastapi-local'
+    region: ap-south-1
+    output_destination: stdout
+    # output_destination: cloudwatch
+    log_group_name: local-fastapi-otel-emf-metric-loggroup
+    # dimension_rollup_option: "NoDimensionRollup"
+    # namespace: local-fastapi-otel-namespace
+    # resource_to_telemetry_conversion:
+    #   enabled: true
+    metric_declarations:
+      - dimensions: [[OTelLib]]
+  
+  # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/awscloudwatchlogsexporter
   awscloudwatchlogs:
-    region: 'ap-south-1'
-    log_group_name: 'otel-fastapi-local-service'
-    log_stream_name: 'LocalOTelFastAPILogStream'
-    endpoint: "logs.ap-south-1.amazonaws.com"
+    region: ap-south-1
+    log_group_name: local-fastapi-otel-logs-loggroup
+    log_stream_name: local-fastapi-otel-logstream
+    raw_log: true # only the log message will be exported to CloudWatch Logs, no emf logs will be exported
+    endpoint: http://aws-otel-collector:4317
+    # endpoint: "https://logs.ap-south-1.amazonaws.com"
+  
+  # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/exporter/awsxrayexporter/README.md
+  # https://aws-otel.github.io/docs/getting-started/x-ray
+  awsxray:
+    region: ap-south-1
+    aws_log_groups: ["local-fastapi-otel-emf-metric-loggroup", "local-fastapi-otel-logs-loggroup"]
+    # local_mode: true
 
 service:
+  # OpenTelemetry Internal Telemetry Configuration: https://opentelemetry.io/docs/collector/internal-telemetry/
+  telemetry:
+    logs:
+      level: INFO
+    metrics:
+      level: none
   pipelines:
     traces:
       receivers: [otlp]
-      # processors: [batch]
-      exporters: [logging, awsxray]
+      exporters: [awsxray]
     metrics:
       receivers: [otlp]
-      # processors: [batch]
-      exporters: [logging, awsemf]
+      exporters: [awsemf]
     logs:
       receivers: [otlp]
-      # processors: [batch]
-      exporters: [logging, awscloudwatchlogs]
-  # telemetry:
-  #   logs:
-  #     level: info
+      exporters: [awscloudwatchlogs,logging]
