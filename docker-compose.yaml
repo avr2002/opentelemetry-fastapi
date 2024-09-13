@@ -11,11 +11,11 @@ services:
     environment:
       OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED: "true"
       OTEL_EXPORTER_OTLP_ENDPOINT: http://aws-otel-collector:4317
-      OTEL_SERVICE_NAME: "Local-OTel-FastAPI-Service"
+      OTEL_SERVICE_NAME: "Local OpenTelemetry FastAPI Service"
       # OTEL_LOG_LEVEL: "INFO"
       LOG_LEVEL: "INFO"
       OTEL_TRACES_EXPORTER: "otlp" # "otlp,console" to export traces to console also
-      OTEL_METRICS_EXPORTER: "otlp"
+      OTEL_METRICS_EXPORTER: "otlp" # adding "console" will not filter and export all the metrics to console
       OTEL_LOGS_EXPORTER: "otlp,console"
     volumes:
       - ./:/app

@@ -30,7 +30,12 @@ async def main():
     # await call_httpbin()
     await call_jsonplaceholder_post()
     await call_echo()
+    # await call_hello()
+    # # await call_httpbin()
+    # await call_jsonplaceholder_post()
+    # await call_echo()
 
 if __name__ == "__main__":
     import asyncio
-    asyncio.run(main())
+    while True:
+        asyncio.run(main())

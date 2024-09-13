@@ -5,7 +5,10 @@ import os
 import sys
 import time
 from logging import Logger
-from typing import Any
+from typing import (
+    Any,
+    Callable,
+)
 
 import httpx
 from fastapi import (
@@ -15,11 +18,15 @@ from fastapi import (
     Response,
     status,
 )
+from fastapi.routing import APIRoute
 from opentelemetry import (
     metrics,
     trace,
 )
-from opentelemetry.metrics import Meter
+from opentelemetry.metrics import (
+    Counter,
+    Meter,
+)
 from opentelemetry.trace import Tracer
 
 # from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
@@ -44,14 +51,20 @@ logger: Logger = logging.getLogger(__name__)
 meter: Meter = metrics.get_meter(__name__)
 tracer: Tracer = trace.get_tracer(__name__)
 
-request_counter = meter.create_counter(name="RequestCount", description="Request Count per Endpoint")
+request_counter: Counter = meter.create_counter(
+    name="app.fastapi.requestcount", description="Request Count per Endpoint"
+)
 
 
 async def request_count_metric__middleware(request: Request, call_next):
     """Middleware to count the number of requests to each endpoint."""
-    request_counter.add(1)
-    # meter.create_counter(name=request.method, unit="Count", description="Request count per endpoint")
-
+    request_counter.add(
+        amount=1,
+        attributes={
+            "http.method": request.method,
+            "http.route": request.url.path,
+        },
+    )
     response = await call_next(request)
     return response
 

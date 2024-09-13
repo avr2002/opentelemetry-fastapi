@@ -14,50 +14,76 @@ exporters:
   logging:
     verbosity: basic
     # use_internal_logger: "false"
-  
+
   # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/awsemfexporter
   awsemf:
     region: ap-south-1
-    output_destination: stdout
-    # output_destination: cloudwatch
+    # output_destination: stdout
+    output_destination: cloudwatch
     log_group_name: local-fastapi-otel-emf-metric-loggroup
     # dimension_rollup_option: "NoDimensionRollup"
     # namespace: local-fastapi-otel-namespace
     # resource_to_telemetry_conversion:
+    #   # convert all the resource attributes to metric labels: THIS IS BAD, DIMENSION EXPLOSION
     #   enabled: true
-    metric_declarations:
-      - dimensions: [[OTelLib]]
-  
+    # metric_declarations:
+    #   - dimensions: [["OTelLib"], ["ServiceName", "Local-OTel-FastAPI-Service"]]
+    #     metric_name_selectors:
+    #       # Export only custom metrics created in the FastAPI application
+    #       - "^app.fastapi.*"
+
+  # @TODO: Remove them later:
+  # https://aws.amazon.com/blogs/mt/adding-metrics-and-traces-to-your-application-on-amazon-eks-with-aws-distro-for-opentelemetry-aws-x-ray-and-amazon-cloudwatch/
+  # https://github.com/aws-samples/one-observability-demo/blob/main/PetAdoptions/petadoptionshistory-py/petadoptionshistory.py
+
   # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/awscloudwatchlogsexporter
   awscloudwatchlogs:
     region: ap-south-1
     log_group_name: local-fastapi-otel-logs-loggroup
+    # log_group_name: local-fastapi-otel-emf-metric-loggroup
     log_stream_name: local-fastapi-otel-logstream
     raw_log: true # only the log message will be exported to CloudWatch Logs, no emf logs will be exported
-    endpoint: http://aws-otel-collector:4317
+    # endpoint: http://aws-otel-collector:4317
     # endpoint: "https://logs.ap-south-1.amazonaws.com"
-  
+
   # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/exporter/awsxrayexporter/README.md
   # https://aws-otel.github.io/docs/getting-started/x-ray
   awsxray:
     region: ap-south-1
-    aws_log_groups: ["local-fastapi-otel-emf-metric-loggroup", "local-fastapi-otel-logs-loggroup"]
+    aws_log_groups:
+      [
+        "local-fastapi-otel-emf-metric-loggroup",
+        "local-fastapi-otel-logs-loggroup",
+      ]
+    # aws_log_groups: ["local-fastapi-otel-emf-metric-loggroup"]
     # local_mode: true
 
-service:
-  # OpenTelemetry Internal Telemetry Configuration: https://opentelemetry.io/docs/collector/internal-telemetry/
-  telemetry:
-    logs:
-      level: INFO
+# https://opentelemetry.io/docs/collector/transforming-telemetry/
+processors:
+  filter:
     metrics:
-      level: none
+      include:
+        match_type: regexp
+        metric_names:
+          # Only include the custom metric
+          - "^app.fastapi.*"
+
+service:
   pipelines:
     traces:
       receivers: [otlp]
       exporters: [awsxray]
     metrics:
       receivers: [otlp]
+      processors: [filter]
       exporters: [awsemf]
     logs:
       receivers: [otlp]
-      exporters: [awscloudwatchlogs,logging]
+      exporters: [awscloudwatchlogs, logging]
+
+  # OpenTelemetry Internal Telemetry Configuration: https://opentelemetry.io/docs/collector/internal-telemetry/
+  telemetry:
+    logs:
+      level: ERROR
+    metrics:
+      level: none
