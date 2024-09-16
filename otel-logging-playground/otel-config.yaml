@@ -1,0 +1,32 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+
+exporters:
+  debug:
+    verbosity: normal
+    # use_internal_logger: false
+
+
+service:
+  pipelines:
+    logs:
+      receivers: [otlp]
+      exporters: [debug]
+    traces:
+      receivers: [otlp]
+      exporters: [debug]
+    metrics:
+      receivers: [otlp]
+      exporters: [debug]
+  
+  telemetry:
+    metrics:
+      level: normal
+      address: 0.0.0.0:8888
+    # logs:
+    #   level: ERROR
+    #   development: true
+    #   output_paths: ["stdout"]

@@ -1,0 +1,32 @@
+services:
+  fastapi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    environment:
+      OTEL_PYTHON_LOG_CORRELATION: "true"
+      # OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED: "true"
+      OTEL_PYTHON_LOG_LEVEL: "DEBUG"
+      OTEL_PYTHON_LOG_FORMAT: "%(asctime)s | %(levelname)s | [%(name)s] | [%(filename)s:%(lineno)d] | %(message)s | [trace_id=%(otelTraceID)s span_id=%(otelSpanID)s resource.service.name=%(otelServiceName)s trace_sampled=%(otelTraceSampled)s]"
+      OTEL_SERVICE_NAME: "Local OTel FastAPI Playground"
+      OTEL_LOG_LEVEL: "INFO"
+      OTEL_TRACES_EXPORTER: "otlp" # "otlp,console" to export traces to console also
+      OTEL_METRICS_EXPORTER: "otlp" # adding "console" will not filter and export all the metrics to console
+      OTEL_LOGS_EXPORTER: "otlp,console"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
+    depends_on:
+      - otel-collector
+  
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    volumes:
+      - ./otel-config.yaml:/etc/otelcol-contrib/config.yaml
+    # env_file:
+    #   - .env
+    ports:
+      - 4317:4317 # OTLP gRPC receiver
+      - 8888:8888 # OTLP metrics receiver
