@@ -22,6 +22,14 @@ ENV PORT=8000
 
 
 # start the server with opentelemetry-instrument
+# ENV OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true
+# ENV OTEL_PYTHON_LOGGING_LOGLEVEL=DEBUG
+# ENV OTEL_PYTHON_LOG_CORRELATION=true
+
+
+# --logs_exporter console,otlp \
+# --service_name python-logs-example \
+
 CMD opentelemetry-instrument \
     gunicorn \
     --workers 4 \

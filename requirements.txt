@@ -3,16 +3,16 @@ httpx
 opentelemetry-distro
 
 # opentelemetry-bootstrap --action requirements
-opentelemetry-instrumentation-asyncio==0.48b0
-opentelemetry-instrumentation-dbapi==0.48b0
-opentelemetry-instrumentation-logging==0.48b0
-opentelemetry-instrumentation-sqlite3==0.48b0
-opentelemetry-instrumentation-threading==0.48b0
-opentelemetry-instrumentation-urllib==0.48b0
-opentelemetry-instrumentation-wsgi==0.48b0
-opentelemetry-instrumentation-asgi==0.48b0
-opentelemetry-instrumentation-fastapi==0.48b0
-opentelemetry-instrumentation-httpx==0.48b0
-opentelemetry-instrumentation-requests==0.48b0
-opentelemetry-instrumentation-tortoiseorm==0.48b0
-opentelemetry-instrumentation-urllib3==0.48b0
+opentelemetry-instrumentation-asyncio
+opentelemetry-instrumentation-dbapi
+opentelemetry-instrumentation-logging
+opentelemetry-instrumentation-sqlite3
+opentelemetry-instrumentation-threading
+opentelemetry-instrumentation-urllib
+opentelemetry-instrumentation-wsgi
+opentelemetry-instrumentation-asgi
+opentelemetry-instrumentation-fastapi
+opentelemetry-instrumentation-httpx
+opentelemetry-instrumentation-requests
+opentelemetry-instrumentation-tortoiseorm
+opentelemetry-instrumentation-urllib3

@@ -35,16 +35,16 @@ from pydantic import BaseModel
 ROUTER = APIRouter(tags=["OTel FastAPI"])
 
 # get log level from environment variable
-LOG_LEVEL = os.environ["LOG_LEVEL"].upper()
+# LOG_LEVEL = os.environ["LOG_LEVEL"].upper()
 # os.environ.get("LOG_LEVEL", "INFO").upper()
 
 # configure logger object with the desired log level and format
-logging.basicConfig(
-    format="{asctime} | {levelname} | {name}:{lineno}:{funcName} | {message}",
-    style="{",  # uses {} as placeholders
-    level=LOG_LEVEL,
-    stream=sys.stdout,  # where to write the log messages, in this case stdout or console
-)
+# logging.basicConfig(
+#     format="{asctime} | {levelname} | {name}:{lineno}:{funcName} | {message} | [trace_id={otelTraceID} | span_id={otelSpanID} | resource.service.name={otelServiceName}",
+#     style="{",  # uses {} as placeholders
+#     # level=LOG_LEVEL,
+#     stream=sys.stdout,  # where to write the log messages, in this case stdout or console
+# )
 
 # create logger object with the name of the current module/file to start logging
 logger: Logger = logging.getLogger(__name__)
@@ -54,6 +54,9 @@ tracer: Tracer = trace.get_tracer(__name__)
 request_counter: Counter = meter.create_counter(
     name="app.fastapi.requestcount", description="Request Count per Endpoint"
 )
+status_counter: Counter = meter.create_counter(
+    name="app.fastapi.statuscount", description="Status Code Count per Endpoint"
+)
 
 
 async def request_count_metric__middleware(request: Request, call_next):
@@ -62,10 +65,18 @@ async def request_count_metric__middleware(request: Request, call_next):
         amount=1,
         attributes={
             "http.method": request.method,
-            "http.route": request.url.path,
+            "http.route": request.url.path,  # this should be replaced with the actual route
         },
     )
     response = await call_next(request)
+    status_counter.add(
+        amount=1,
+        attributes={
+            "http.method": request.method,
+            "http.route": request.url.path,
+            "http.status_code": response.status_code,
+        },
+    )
     return response
 
 
