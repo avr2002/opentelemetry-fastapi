@@ -1,8 +1,6 @@
 # Python .gitignore template from
 # https://github.com/github/gitignore/blob/main/Python.gitignore
 
-NOTES.md
-
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
