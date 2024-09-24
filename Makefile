@@ -3,6 +3,9 @@
 # You can also run multiple in sequence, e.g. `make clean lint test serve-coverage-report`
 
 
+make test-endpoints:
+	bash run.sh test-endpoints
+
 run-docker:
 	bash run.sh run-docker
 

@@ -7,6 +7,23 @@ AWS_REGION="ap-south-1"
 
 THIS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
+
+function test-endpoints {
+    TIMES=10
+    BASE_URL="http://localhost:8000"
+    post_id=1
+    for i in $(eval echo "{1..$TIMES}")
+    do
+        siege -c 1 -r 1 "${BASE_URL}/hello"
+        siege -c 1 -r 1 "${BASE_URL}/httpbin"
+        siege -c 1 -r 1 "${BASE_URL}/jsonplaceholder/posts/${post_id}"
+        siege -c 1 -r 1 "${BASE_URL}/echo POST" -d '{"message": "Hello from siege!"}' --content-type "application/json"
+        sleep 3
+    done
+}
+
+
+
 # install core and development Python dependencies into the currently activated venv
 function install {
     python -m pip install --upgrade pip
