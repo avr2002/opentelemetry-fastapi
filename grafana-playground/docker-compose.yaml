@@ -1,0 +1,55 @@
+services:
+  fastapi:
+    container_name: fastapi-app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    environment:
+      OTEL_PYTHON_LOG_CORRELATION: "true"
+      # OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED: "true"
+      OTEL_PYTHON_LOG_LEVEL: "DEBUG"
+      OTEL_PYTHON_LOG_FORMAT: "%(asctime)s | %(levelname)s | [%(name)s] | [%(filename)s:%(lineno)d] | %(message)s | [trace_id=%(otelTraceID)s span_id=%(otelSpanID)s resource.service.name=%(otelServiceName)s trace_sampled=%(otelTraceSampled)s]"
+      OTEL_SERVICE_NAME: "OTel FastAPI Grafana Playground"
+      OTEL_LOG_LEVEL: "INFO"
+      OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE: "cumulative"
+      OTEL_TRACES_EXPORTER: "otlp"
+      OTEL_METRICS_EXPORTER: "otlp"
+      OTEL_LOGS_EXPORTER: "otlp,console"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://otelcol:4317"
+    depends_on:
+      - otelcol
+  
+  otelcol:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: otel-col
+    command: [ "--config=/etc/otelcol-config.yaml" ]
+    volumes:
+      - ./etc/otelcol-config.yaml:/etc/otelcol-config.yaml
+    # env_file:
+    #   - .env
+    ports:
+      - 4317:4317 # OTLP gRPC receiver
+      - 4318:4318 # OTLP HTTP receiver
+      - 8888:8888 # OTLP metrics receiver
+  
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    command:
+      - --web.console.templates=/etc/prometheus/consoles
+      - --web.console.libraries=/etc/prometheus/console_libraries
+      - --storage.tsdb.retention.time=1h
+      - --config.file=/etc/prometheus/prometheus-config.yaml
+      - --storage.tsdb.path=/prometheus
+      - --web.enable-lifecycle
+      - --web.route-prefix=/
+      - --enable-feature=exemplar-storage
+      - --enable-feature=otlp-write-receiver  # Enable the OTLP receiver: https://prometheus.io/docs/prometheus/latest/querying/api/#otlp-receiver
+    volumes:
+      - ./etc/prometheus-config.yaml:/etc/prometheus/prometheus-config.yaml
+    ports:
+      - "9090:9090"
